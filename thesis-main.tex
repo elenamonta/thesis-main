@@ -38,7 +38,7 @@ L'analisi automatica di volti tramite tecniche di visione artificiale è oggi un
 
 In questo contesto emerge il problema del \textit{face morphing}, una manipolazione che permette di ottenere immagini apparentemente autentiche ma create mediante la fusione di più identità. Tale alterazione costituisce una vulnerabilità significativa, poiché l'immagine morphed può risultare compatibile con più soggetti, compromettendo i processi di verifica e aumentando il rischio di frodi documentali. Per questo motivo, l'analisi automatica del morphing richiede strumenti in grado di rilevare e valutare quantitativamente tali manipolazioni.
 
-L Il lavoro di tesi è incentrato sull'analisi delle tecniche di morphing facciale e sulla progettazione di possibili contromisure per contrastarne l'impatto sui sistemi biometrici. In particolare, l'attività comprende lo studio dei processi di generazione delle immagini morphed, lo sviluppo e l'applicazione di tecniche di preprocessing e di inversione del morphing (\textit{demorphing}), con l'obiettivo di comprenderne il funzionamento, riprodurne il processo di generazione e verificarne sperimentalmente la possibilità di inversione attraverso l'analisi dei risultati ottenuti.
+Il lavoro di tesi è incentrato sull'analisi delle tecniche di morphing facciale e sulla progettazione di possibili contromisure per contrastarne l'impatto sui sistemi biometrici. In particolare, l'attività comprende lo studio dei processi di generazione delle immagini morphed, lo sviluppo e l'applicazione di tecniche di preprocessing e di inversione del morphing (\textit{demorphing}), con l'obiettivo di comprenderne il funzionamento, riprodurne il processo di generazione e verificarne sperimentalmente la possibilità di inversione attraverso l'analisi dei risultati ottenuti.
 \end{abstract}
 
 \begin{dedication} % this is optional
@@ -78,11 +78,10 @@ Tali fattori, possono ingannare e risultano particolarmente difficili da rilevar
 Alla luce di queste vulnerabilità, diventa necessario sviluppare metodi automatici in grado di analizzare immagini sospette e supportare la verifica dell'identità nei sistemi biometrici, riducendo il rischio di accettazione di documenti contenenti fotografie morphed.
 
 \section{Obiettivi e contributi della tesi}
-L'obiettivo del progetto è contribuire allo sviluppo di un approccio orientato all'identificazione e alla valutazione di immagini biometriche manipolate tramite tecniche di face morphing. Una possibile strategia di analisi consiste nel tentare di ricostruire l'identità nascosta a partire dall'immagine del documento e da una fotografia live scattata durante il controllo. Se la ricostruzione produce un volto compatibile con una seconda identità diversa dal soggetto presente al controllo, l'immagine del documento può essere potenzialmente generata tramite morphing.
+L'obiettivo del progetto è contribuire allo sviluppo di un approccio orientato all' \\identificazione e alla valutazione di immagini biometriche manipolate tramite tecniche di face morphing. Una possibile strategia di analisi consiste nel tentare di ricostruire l'identità nascosta a partire dall'immagine del documento e da una fotografia live scattata durante il controllo. Se la ricostruzione produce un volto compatibile con una seconda identità diversa dal soggetto presente al controllo, l'immagine del documento può essere potenzialmente generata tramite morphing.
 
 Il contributo principale di questa tesi consiste, da un lato, nell'introduzione di una fase di preprocessing basata su modelli di rimozione dello sfondo per migliorare la qualità delle immagini utilizzate nella pipeline, preservando le informazioni biometriche rilevanti, e dall'altro nello sviluppo e nella sperimentazione di un algoritmo di demorphing progettato per immagini morphed generate mediante uno specifico metodo di morphing.
 
-\section{Struttura della tesi}
 Il resto del lavoro è strutturato come segue.
 
 Il Capitolo 2 fornisce una panoramica dei concetti fondamentali di face recognition, utile a comprendere il funzionamento di base degli algoritmi e metriche di valutazione adottati.
@@ -100,10 +99,15 @@ Infine, nel Capitolo 6 sono riportate le conclusioni del lavoro, con una sintesi
 \label{chap:background}
 
 \section{Face recognition basato su deep-learning}
-% breve rassegna e descrizione di ArcFace
-Il \textit{face recognition} è una tecnologia biometrica progettata per identificare o verficare l'identità di un individuo analizzando le caratteristiche fisiologiche del suo volto. I moderni sistemi di riconoscimento facciale si basano principalmente su modelli di deep learning.
+Il \textit{face recognition} è una tecnologia biometrica progettata per identificare o verficare l'identità di un individuo analizzando le caratteristiche fisiologiche del suo volto.
 
-Attraverso l'uso di \textit{Deep Convolutional Neural Network} (DCNN) il sistema è in grado di tradurre i pixel di un immagine in un vettore numerico compatto, detto \textit{embedding}. Questa rappresentazione contiene informazioni più astratte legate all'identità della persona. I modelli di Deep Learning sono addestrati per essere invarianti rispetto ai cambiamenti che non modificano l'identità, come illuminazione, contrasto, rumore o colore della pelle, che possono alterare molti pixel senza influenzare il riconoscimento umano.
+Negli ultimi anni sono stati sviluppati numerosi approcci al face recognition basati su tecniche di deep learning, che differiscono principalmente per l’architettura della rete neurale e per la funzione di perdita utilizzata durante l’addestramento.
+Tra i modelli più noti vi sono DeepFace, VGG-Face, FaceNet, OpenFace, DeepID, ArcFace e CosFace.
+
+Tali modelli condividono una struttura generale basata su \textit{Deep Convolutional Neural Network} (DCNN).
+Attraverso l'uso di reti convoluzionali il sistema è in grado di tradurre i pixel di un immagine in un vettore numerico compatto, detto \textit{embedding}. Questa rappresentazione contiene informazioni più astratte legate all'identità della persona.
+
+I modelli di Deep Learning sono addestrati per essere invarianti rispetto ai cambiamenti che non modificano l'identità, come illuminazione, contrasto, rumore o colore della pelle, che possono alterare molti pixel senza influenzare il riconoscimento umano.
 
 Lo spazio degli embedding è uno spazio vettoriale, di dimensione fissa, in cui ogni volto viene rappresentato come un vettore numerico.
 \[
@@ -787,10 +791,82 @@ In questo scenario ci si aspetta:
     \item $dist(z_D, z_C)$ rimanga elevata, indicando identità distinte e confermando la separazione rispetto all'identità del criminale.
 \end{itemize}
 
-% descrizione caso bona fine (?)
+\subsection{Scenario documento bona fide}
+Siano:
+\begin{itemize}
+    \item $z_C$, embedding del soggetto presente nel documento
+    \item $z_L$, embedding dell'immagine live dello stesso soggetto presente nel documento
+    \item $z_D$, embedding dell'immagine demorphed, ottenuto tramite interpolazione inversa
+    \[
+    z_D = \mathrm{inverse\_slerp}(z_L, z_C, t)
+    \]
+\end{itemize}
+
+In questo scenario il documento non contiene informazioni biometriche composite, poiché non è stato generato tramite morphing. Pertanto, non esiste un'identità da recuperare attraverso il processo di demorphing.
+
+L'obiettivo dell’analisi è verificare che, in assenza di morphing, il metodo non produca una ricostruzione riconducibile a un’identità alternativa.
+
+Ci si aspetta che:
+
+\begin{itemize}
+    \item $dist(z_C, z_L)$ sia prossima a zero, indicando che i due embedding rappresentano la medesima identità. Un eventuale scostamento dallo zero è attribuibile alla variabilità intra-soggetto, dovuta a differenze di posa, espressione facciale o condizioni di illuminazione.
+\end{itemize}
 
 \section{Protocollo}
+Per gli esperimenti è stato utilizzato il dataset FEI Face Database.
+Il dataset fornisce, per ciascun soggetto, immagini acquisite in condizioni controllate (cartella \texttt{doc}) conformi allo standard ISO/IEC per fotografie da documento, caratterizzate da espressione neutra, illuminazione uniforme e sfondo omogeneo.
+
+Per gli stessi soggetti sono disponibili due immagini \texttt{live}, acquisite in condizioni meno controllate, che includono variazioni di posa, espressione facciale, etc.
+
+Le coppie di soggetti utilizzate per il morphing sono specificate nel file \texttt{pairs.txt}, che definisce le combinazioni tra identità da fondere.
+
+Il morphing è stato realizzato nello spazio degli embedding tramite interpolazione sferica (SLERP). Data una coppia di embedding normalizzati $v_0$ e $v_1$, l'embedding morphed $c$ è stato ottenuto come:
+\[
+c = \text{slerp}(v_0, v_1, t)
+\]
+dove il parametro di interpolazione è stato fissato a $t = 0.5$, corrispondente a una fusione simmetrica delle due identità.
+
+L'interpolazione sferica garantisce che il vettore risultante rimanga sulla superficie dell’ipersfera unitaria, preservando la geometria dello spazio degli embedding.
+
+Le immagini morphed generate seguono la convenzione di naming:
+\[
+\texttt{M\_<subj1>\_<subj2>\_<algorithm>\_<factor>\_<factor>\_<postproc>}
+\]
+dove \texttt{subj1} e \texttt{subj2} identificano i soggetti coinvolti nel morphing \cite{di2023combining}.
+
+Una volta generata l’immagine morphed tra due soggetti $ID_1$ e $ID_2$, vengono selezionate le immagini \texttt{live} delle identità coinvolte.
+
+Poiché per ciascun soggetto sono disponibili due immagini \texttt{live}, il processo di demorphing viene eseguito quattro volte per ogni morph:
+
+\begin{itemize}
+\item due volte utilizzando le immagini live di $ID_1$,
+\item due volte utilizzando le immagini live di $ID_2$.
+\end{itemize}
+
+Il demorphing viene calcolato tramite l’inversione dell’interpolazione sferica.
+Dato:
+\[
+c = \text{slerp}(v_0, v_1, t)
+\]
+la procedura inversa consente di ricostruire $v_1$ a partire da $v_0$, $c$ e $t$, assumendo nuovamente $t = 0.5$.
+
+Formalmente:
+\[
+v_1 = \text{inverse\_slerp}(v_0, c, t)
+\]
+Il vettore ricostruito viene successivamente normalizzato per garantire la permanenza sulla superficie dell’ipersfera unitaria.
+
+La qualità della ricostruzione viene valutata calcolando la distanza coseno tra l’embedding demorphed e gli embedding delle identità originali.
+
+La distanza coseno~\ref{sec:distanza_coseno} è definita come:
+\[
+d(v0,v1) = 1 - sim(v0,v1)
+\]
+Valori prossimi a zero indicano elevata similarità tra gli embedding, mentre valori prossimi a uno indicano identità differenti.
+
 \section{Analisi dei risultati}
+
+\subsubsection{Scenario ideale}
 
 \begin{table}[H]
 \centering
@@ -798,7 +874,7 @@ In questo scenario ci si aspetta:
 
 \begin{tabular}{|c|c|c|c|c|}
 \hline
-ID1 & MORPH & ID2 & TEST1 & TEST2 \\
+ID1 & MORPH & ID2 & DEMORPH1 & DEMORPH2 \\
 \hline
 \includegraphics[width=0.18\textwidth]{figures/ides/5-11.jpg} &
 \includegraphics[width=0.18\textwidth]{figures/caso_ideale/M_5-11_23-11.jpg} &
@@ -807,9 +883,38 @@ ID1 & MORPH & ID2 & TEST1 & TEST2 \\
 \includegraphics[width=0.18\textwidth]{figures/caso_ideale/D_23-11.jpg} \\
 \hline
 \end{tabular}
-
 \caption{Simulazione caso ideale}
 \end{table}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{cc|c}
+\hline
+Sub1 & Sub2 & distance \\
+\hline
+ID1  & ID2 & 0.8322289437055588  \\
+MORPH  & ID1	& 0.23592734336853027 \\
+MORPH  & ID2	& 0.2358245849609375 \\
+DEMORPH1  & ID1	& 0.0000001192092896 \\
+DEMORPH2  & ID2	& 5.960464477539063e-08 \\
+\hline
+\end{tabular}
+\caption{Distanza coseno nel caso ideale}
+\label{tab:caso_ideale}
+\end{table}
+
+La tabella~\ref{tab:caso_ideale} riporta le distanze coseno calcolate tra gli embedding facciali dei soggetti coinvolti nel processo di morphing e demorphing.
+In particolare, vengono confrontati gli embedding delle identità originali (ID1 e ID2), dell’immagine morphed (MORPH) e delle immagini ricostruite tramite demorphing (DEMORPH).
+
+Si osserva innanzitutto che la distanza coseno tra ID1 e ID2 è pari a $0.8322$, valore elevato che conferma la significativa dissimilarità tra le due identità di partenza.
+Al contrario, le distanze tra MORPH e le due identità originali risultano pari a circa $0.236$, indicando che l’immagine morphed si colloca, come atteso, in una posizione intermedia nello spazio degli embedding.
+
+Le distanze coseno tra DEMORPH e l’identità corretta di riferimento sono dell’ordine di $10^-7$, quindi prossime a zero. Questo indica che l'identità ricostruita coincide con quella originale.
+In particolare, nel caso di DEMORPH1 il processo di demorphing è stato eseguito utilizzando la coppia (MORPH, ID2), con l’obiettivo di ricostruire ID1.
+La distanza prossima a zero tra DEMORPH1 e ID1 conferma la corretta ricostruzione dell’identità.
+Analogamente, DEMORPH2 è stato ottenuto a partire da (MORPH, ID1) e ricostruisce correttamente ID2, come dimostrato dalla distanza coseno anch’essa trascurabile.
+
+\subsubsection{Simulazione caso reale di morphing attack}
 
 \begin{table}[H]
 \centering
@@ -826,8 +931,32 @@ DOC & LIVE & DEMORPH & ID2 \\
 \hline
 \end{tabular}
 
-\caption{Simulazione caso reale}
+\caption{Simulazione di un caso reale assumendo ID1 come soggetto criminale}
 \end{table}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{cc|c}
+\hline
+Sub1 & Sub2 & distance \\
+\hline
+DEMORPH  & ID1	& 0.8329989165067673 \\
+DEMORPH  & ID2	& 0.12894326448440552 \\
+\hline
+\end{tabular}
+\caption{Distanza coseno nel caso reale simulato con il soggetto ID1}
+\label{tab:caso_reale_id1}
+\end{table}
+
+La Tabella~\ref{tab:caso_reale_id1} riporta i risultati ottenuti in uno scenario più realistico rispetto al caso ideale precedentemente analizzato. In questo esperimento, il processo di demorphing è stato eseguito utilizzando la coppia (DOC, LIVE), dove:
+\begin{itemize}
+    \item DOC rappresenta l’immagine del documento generata tramite morphing a partire dalle identità ID1 e ID2;
+    \item LIVE è un’immagine del soggetto ID1 acquisita in condizioni differenti (sorriso)
+\end{itemize}
+
+L’obiettivo del demorphing, in questo contesto, è ricostruire l’identità  complementare a LIVE che ha contribuito alla generazione di DOC, ovvero ID2.
+I risultati mostrano che la distanza coseno tra l’embedding dell’immagine demorphed e ID2 è pari a circa $0.129$. Questo indica che l’embedding ricostruito si colloca nello spazio delle caratteristiche in prossimità di ID2, confermando la corretta ricostruzione dell’identità attesa.
+A scopo di verifica, è stata inoltre calcolata la distanza coseno tra l’immagine demorphed e ID1. In questo caso si osserva un valore pari a circa $0.833$, sostanzialmente equivalente alla distanza originaria tra ID1 e ID2 nel caso di confronto diretto.
 
 \begin{table}[H]
 \centering
@@ -843,22 +972,104 @@ DOC & LIVE & DEMORPH & ID1 \\
 \includegraphics[width=0.18\textwidth]{figures/ides/5-11.jpg} \\
 \hline
 \end{tabular}
-
-\caption{Simulazione caso reale}
+\caption{Simulazione di un caso reale assumendo ID2 come soggetto criminale}
 \end{table}
 
 \begin{table}[H]
 \centering
-\begin{tabular}{c|cccc}
+\begin{tabular}{cc|c}
 \hline
- & 1 & 2 & 3 & 4  \\
+Sub1 & Sub2 & distance \\
 \hline
-1  & 1.0 & 0.999 &	0.997 & 0.934 \\
-2  & 0.995	& 0.984	& 0.976	& 0.809 \\
+DEMORPH  & ID1	& 0.10461181402206421 \\
+DEMORPH  & ID2	& 0.8428909927606583 \\
 \hline
 \end{tabular}
-\caption{MAP per BEN2}
+\caption{Distanza coseno nel caso reale simulato con il soggetto ID2}
+\label{tab:caso_reale_id2}
 \end{table}
+
+È stato inoltre analizzato il caso inverso, in cui l’immagine LIVE rappresenta il soggetto ID2 acquisito con un'espressione differente a quella utilizzata per la generazione del morph. Anche in questo scenario, il processo di demorphing è stato applicato alla coppia (DOC, LIVE), con l’obiettivo di ricostruire l’identità complementare presente nell’immagine morphed (ID1).
+
+I risultati riportati in Tabella~\ref{tab:caso_reale_id2} risultano coerenti con quanto osservato nel caso precedente. In particolare, la distanza coseno tra l’embedding dell’immagine demorphed e ID1 è pari a circa 0.105, indicando una corretta ricostruzione dell'identità ID1.
+
+\subsubsection{Simulazione caso reale di documento bona fide}
+
+\begin{table}[H]
+\centering
+
+\begin{minipage}{0.48\textwidth}
+\centering
+\setlength{\tabcolsep}{2pt}
+\begin{tabular}{|c|c|c|}
+\hline
+DOC & LIVE & DEMORPH1 \\
+\hline
+\includegraphics[width=0.32\textwidth]{figures/ides/5-11.jpg} &
+\includegraphics[width=0.32\textwidth]{figures/ides/5-12.jpg} &
+\includegraphics[width=0.32\textwidth]{figures/caso_bona_fide/D_5-11_5-12.jpg} \\
+\hline
+\end{tabular}
+\caption{Simulazione di un caso reale con documento bona fide del soggetto ID1}
+\end{minipage}
+\hfill
+\begin{minipage}{0.48\textwidth}
+\centering
+\setlength{\tabcolsep}{2pt}
+\begin{tabular}{|c|c|c|}
+\hline
+DOC & LIVE & DEMORPH2 \\
+\hline
+\includegraphics[width=0.32\textwidth]{figures/ides/23-11.jpg} &
+\includegraphics[width=0.32\textwidth]{figures/ides/23-12.jpg} &
+\includegraphics[width=0.32\textwidth]{figures/caso_bona_fide/D_23-11_23-12.jpg} \\
+\hline
+\end{tabular}
+\caption{Simulazione di un caso reale con documento bona fide del soggetto ID2}
+\end{minipage}
+
+\end{table}
+
+\begin{table}[H]
+\centering
+
+\begin{minipage}{0.48\textwidth}
+\centering
+\begin{tabular}{cc|c}
+\hline
+Sub1 & Sub2 & distance \\
+\hline
+DEMORPH1  & ID1 & 0.14877784252 \\
+DEMORPH1  & ID2 & 0.9234048128 \\
+\hline
+\end{tabular}
+\caption{Distanza coseno nel caso reale bona fide col soggetto ID1}
+\label{tab:caso_bona_fide_id1}
+\end{minipage}
+\hfill
+\begin{minipage}{0.48\textwidth}
+\centering
+\begin{tabular}{cc|c}
+\hline
+Sub1 & Sub2 & distance \\
+\hline
+DEMORPH2  & ID1 & 0.855810821 \\
+DEMORPH2  & ID2 & 0.10475689172 \\
+\hline
+\end{tabular}
+\caption{Distanza coseno nel caso reale bona fide col soggetto ID2}
+\label{tab:caso_bona_fide_id2}
+\end{minipage}
+
+\end{table}
+
+In questo caso l'immagine del documento non è generato tramite morphing, ma rappresenta un caso bona fide. In tale scenario, si assume che:
+\begin{itemize}
+    \item DOC rappresenta il documento appartenente realmente al soggetto ID1
+    \item LIVE è l'immagine dello stesso soggetto ID1 con espressione differente rispetto al documento
+\end{itemize}
+
+In questo contesto non è presente alcuna identità latente da separare. I risultati riportati nelle Tabelle~\ref{tab:caso_bona_fide_id1} e~\ref{tab:caso_bona_fide_id2} mostrano che l’embedding ottenuto dal demorphing risulta significativamente più vicino all’identità presente nel documento.
 
 %----------------------------------------------------------------------------------------
 
