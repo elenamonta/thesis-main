@@ -38,7 +38,7 @@ L'analisi automatica di volti tramite tecniche di visione artificiale è oggi un
 
 In questo contesto emerge il problema del \textit{face morphing}, una manipolazione che permette di ottenere immagini apparentemente autentiche ma create mediante la fusione di più identità. Tale alterazione costituisce una vulnerabilità significativa, poiché l'immagine morphed può risultare compatibile con più soggetti, compromettendo i processi di verifica e aumentando il rischio di frodi documentali. Per questo motivo, l'analisi automatica del morphing richiede strumenti in grado di rilevare e valutare quantitativamente tali manipolazioni.
 
-Il lavoro di tesi è incentrato sull'analisi delle tecniche di morphing facciale e sulla progettazione di possibili contromisure per contrastarne l'impatto sui sistemi biometrici. In particolare, l'attività comprende lo studio dei processi di generazione delle immagini morphed, lo sviluppo e l'applicazione di tecniche di preprocessing e di inversione del morphing (\textit{demorphing}), con l'obiettivo di comprenderne il funzionamento, riprodurne il processo di generazione e verificarne sperimentalmente la possibilità di inversione attraverso l'analisi dei risultati ottenuti.
+Il lavoro di tesi è incentrato sull'analisi delle tecniche di morphing facciale e sulla progettazione di possibili contromisure per contrastarne l'impatto sui sistemi biometrici. In particolare, l'attività comprende lo studio dei processi di generazione delle immagini morphed, lo sviluppo e l'applicazione di tecniche di post-processing e di inversione del morphing (\textit{demorphing}), con l'obiettivo di comprenderne il funzionamento, riprodurne il processo di generazione e verificarne sperimentalmente la possibilità di inversione attraverso l'analisi dei risultati ottenuti.
 \end{abstract}
 
 \begin{dedication} % this is optional
@@ -48,7 +48,7 @@ Ai miei genitori, per l'amore e il supporto.
 %----------------------------------------------------------------------------------------
 \tableofcontents
 \listoffigures     % (optional) comment if empty
-\lstlistoflistings % (optional) comment if empty
+%\lstlistoflistings % (optional) comment if empty
 %----------------------------------------------------------------------------------------
 
 \mainmatter
@@ -58,7 +58,9 @@ Ai miei genitori, per l'amore e il supporto.
 \label{chap:introduzione}
 
 \section{Face morphing come vulnerabilità nei sistemi biometrici}
-Il face morphing rappresenta una tecnica di manipolazione che combina due volti differenti in un'unica immagine sintetica, mantenendo caratteristiche biometriche di entrambi i soggetti coinvolti \cite{magicpassport}. Il processo di generazione di un'immagine morphed consiste nella combinazione controllata delle due immagini facciali distinte, in cui le informazioni caratteristiche di ciascun volto vengono integrate per produrre un volto sintetico che risulti plausibile e compatibile con entrambe le identità di partenza.
+Il face morphing rappresenta una tecnica di manipolazione che combina due volti differenti in un'unica immagine sintetica, mantenendo caratteristiche biometriche di entrambi i soggetti coinvolti \cite{magicpassport}.
+
+Il processo di generazione di un'immagine morphed consiste nella combinazione controllata delle due immagini facciali distinte, in cui le informazioni caratteristiche di ciascun volto vengono integrate per produrre un volto sintetico che risulti plausibile e compatibile con entrambe le identità di partenza.
 
 Il risultato è un'immagine visivamente realistica che incorpora tratti di entrambe le identità coinvolte. Questa proprietà rende il morphing particolarmente critico in ambito biometrico, poiché l'immagine ottenuta può essere riconosciuta come sufficientemente simile a ciascuno dei soggetti originali dai sistemi automatici di verifica dell'identità. In altre parole, un volto morphed può produrre una rappresentazione biometrica intermedia in grado di soddisfare le soglie decisionali adottate dai sistemi di riconoscimento facciale.
 
@@ -80,15 +82,15 @@ Alla luce di queste vulnerabilità, diventa necessario sviluppare metodi automat
 \section{Obiettivi e contributi della tesi}
 L'obiettivo del progetto è contribuire allo sviluppo di un approccio orientato all' \\identificazione e alla valutazione di immagini biometriche manipolate tramite tecniche di face morphing. Una possibile strategia di analisi consiste nel tentare di ricostruire l'identità nascosta a partire dall'immagine del documento e da una fotografia live scattata durante il controllo. Se la ricostruzione produce un volto compatibile con una seconda identità diversa dal soggetto presente al controllo, l'immagine del documento può essere potenzialmente generata tramite morphing.
 
-Il contributo principale di questa tesi consiste, da un lato, nell'introduzione di una fase di preprocessing basata su modelli di rimozione dello sfondo per migliorare la qualità delle immagini utilizzate nella pipeline, preservando le informazioni biometriche rilevanti, e dall'altro nello sviluppo e nella sperimentazione di un algoritmo di demorphing progettato per immagini morphed generate mediante uno specifico metodo di morphing.
+Il contributo principale di questa tesi consiste, da un lato, nell'introduzione di una fase di postprocessing, basata su modelli di rimozione dello sfondo, per garantire la conformità delle immagini morphed ai requisiti ISO/ICAO previsti per le foto dei documenti d'identità, e dall'altro, nello sviluppo e nella sperimentazione di un algoritmo di demorphing in grado di invertire il processo di generazione delle immagini morphed.
 
 Il resto del lavoro è strutturato come segue.
 
 Il Capitolo 2 fornisce una panoramica dei concetti fondamentali di face recognition, utile a comprendere il funzionamento di base degli algoritmi e metriche di valutazione adottati.
 
-Il Capitolo 3 descrive il processo di face morphing nello spazio degli embedding, analizzando le tecniche di interpolazione lineare e sferica, e mostra l’adattamento delle immagini generate agli standard ICAO mediante una fase di preprocessing finalizzata alla rimozione e normalizzazione dello sfondo.
+Il Capitolo 3 descrive il processo di face morphing nello spazio degli embedding, analizzando le tecniche di interpolazione lineare e sferica, e mostra l’adattamento delle immagini generate agli standard ICAO mediante tecniche di rimozione e normalizzazione dello sfondo.
 
-Il Capitolo 4 presenta il problema inverso del demorphing realizzato attraverso la formula di inversione (approssimata) della SLERP e descrive la strategia proposta per la ricostruzione dell'identità complementare.
+Il Capitolo 4 presenta il problema inverso del demorphing realizzato attraverso la formula di inversione della SLERP e descrive la strategia proposta per la ricostruzione dell'identità complementare.
 
 Il Capitolo 5 mostra le prove sperimentali effettuate, i dati e i modelli impiegati nella pipeline generativa e di verifica, mettendo a confronto i risultati attesi con quelli ottenuti nelle diverse configurazioni analizzate.
 
@@ -100,14 +102,15 @@ Infine, nel Capitolo 6 sono riportate le conclusioni del lavoro, con una sintesi
 
 \section{Face recognition basato su deep-learning}
 Il \textit{face recognition} è una tecnologia biometrica progettata per identificare o verficare l'identità di un individuo analizzando le caratteristiche fisiologiche del suo volto.
+I moderni sistemi di riconoscimento facciale si basano principalmente su modelli di deep learning e seguono una pipeline di elaborazione composta da una sequenza di fasi consecutive, ciascuna funzionale alla successiva.
 
-Negli ultimi anni sono stati sviluppati numerosi approcci al face recognition basati su tecniche di deep learning, che differiscono principalmente per l’architettura della rete neurale e per la funzione di perdita utilizzata durante l’addestramento.
-Tra i modelli più noti vi sono DeepFace, VGG-Face, FaceNet, OpenFace, DeepID, ArcFace e CosFace.
+Il processo inizia con la fase di rilevamento, durante la quale il sistema individua la presenza di uno o più volti all'interno dell'immagine e ne delimita la posizione.
+Una volta isolato il volto, si procede con l'allineamento, che consiste nell'identificazione di punti di riferimento facciali al fine di correggere eventuali variazioni di posa, inclinazione o rotazione.
+Successivamente, l'immagine viene sottoposta a normalizzazione. Il volto viene ridimensionato e i valori dei pixel vengono standardizzati per garantire che l’immagine in ingresso sia compatibile con quelle su cui la rete è stata addestrata.
 
-Tali modelli condividono una struttura generale basata su \textit{Deep Convolutional Neural Network} (DCNN).
-Attraverso l'uso di reti convoluzionali il sistema è in grado di tradurre i pixel di un immagine in un vettore numerico compatto, detto \textit{embedding}. Questa rappresentazione contiene informazioni più astratte legate all'identità della persona.
+L'immagine processata viene fornita alla rete neurale che, attraverso l'uso di \textit{Deep Convolutional Neural Network} (DCNN), è in grado di tradurre i pixel di un immagine in un vettore numerico compatto, detto \textit{embedding}.
 
-I modelli di Deep Learning sono addestrati per essere invarianti rispetto ai cambiamenti che non modificano l'identità, come illuminazione, contrasto, rumore o colore della pelle, che possono alterare molti pixel senza influenzare il riconoscimento umano.
+Questa rappresentazione contiene informazioni più astratte legate all'identità della persona. I modelli di Deep Learning sono addestrati per essere invarianti rispetto ai cambiamenti che non modificano l'identità, come illuminazione, contrasto, rumore o colore della pelle, che possono alterare molti pixel senza influenzare il riconoscimento umano.
 
 Lo spazio degli embedding è uno spazio vettoriale, di dimensione fissa, in cui ogni volto viene rappresentato come un vettore numerico.
 \[
@@ -115,7 +118,11 @@ x \in \mathbb{R}^d
 \]
 Durante l'addestramento, il modello viene ottimizzato tramite funzioni di "perdita" (\textit{loss}) che impone vincoli di separabilità tra classi. Il modello posiziona i vettori all'interno dello spazio in modo tale che la distanza tra di essi rifletta direttamente la somiglianza dell'identità: volti della stessa persona devono avere una distanza intra-classe piccola, mentre volti di persone diverse devono avere una distanza inter-classe grande \cite{WANG2021215}.
 
-Il modello di riconoscimento facciale ArcFace (\textit{Additive Angular Margin Loss}) affina il processo di separazione proiettando gli embedding su una ipersfera unitaria. Questo significa che i vettori non sono più distribuiti liberamente in $\mathbb{R^d}$, ma sono vincolati a stare sulla superficie della sfera $S^{d-1}$. In questo spazio la somiglianza tra due vettori non dipende dalla lunghezza, ma solo dall'angolo tra di essi.
+In questo contesto, sono stati proposti numerosi approcci per il face recognition, che differiscono per architettura della rete, funzione di perdita e modalità di strutturazione dello spazio degli embedding. Alcuni metodi si basano su schemi di classificazione tradizionale con softmax, altri adottano perdite metriche come la triplet loss, mentre approcci più recenti introducono vincoli geometrici espliciti per rafforzare la separabilità tra identità \cite{serengil2024lightface}.
+
+In particolare, alcuni modelli riformulano il problema della separabilità in termini puramente angolari, imponendo un vincolo di normalizzazione sugli embedding e introducendo un margine esplicito tra le classi.
+
+Il modello di riconoscimento facciale ArcFace (\textit{Additive Angular Margin Loss}) \cite{deng2019arcface} affina questo processo proiettando gli embedding su una ipersfera unitaria. Questo significa che i vettori non sono più distribuiti liberamente in $\mathbb{R^d}$, ma sono vincolati a stare sulla superficie della sfera $S^{d-1}$. In questo spazio la somiglianza tra due vettori non dipende dalla lunghezza, ma solo dall'angolo tra di essi.
 
 In uno spazio geometrico normalizzato la somiglianza tra due volti corrisponde direttamente all'ampiezza dell'angolo tra i vettori corrispondenti. ArcFace introduce un vincolo aggiuntivo imponendo un margine angolare $m$ sull'angolo associato alla classe corretta. Questo significa che la distanza tra due volti simili risulti maggiore, poiché
 \[
@@ -157,11 +164,18 @@ La decisione di verifica biometrica viene effettuata confrontando il valore otte
 \section{Definizione matematica del face morphing}
 Un \textit{morphing attack} consiste nella generazione di un'immagine facciale artificiale ottenuta combinando due identità distinte, con l'obiettivo di produrre un volto che venga accettato dal sistema biometrico come appartenente a entrambe.
 
-I modelli di riconoscimento facciale possono essere sfruttati non solo come strumenti di identificazione, ma anche come mezzi per la costruzione di attacchi biometrici. In particolare, gli approcci che operano nello spazio degli embedding risultano notevolmente efficaci rispetto alle tecniche basate esclusivamente su manipolazioni geometriche o pixel-level, poiché permettono di agire direttamente sulla rappresentazione utilizzata dal sistema di riconoscimento che prende la decisione. Infatti, i modelli di face recognition non confrontano le immagini a livello di pixel, ma valutano la somiglianza tra vettori all'interno dello spazio appreso dal modello.
+La generazione può avvenire mediante trasformazioni geometriche basate sull’\\ individuazione dei facial landmark, ossia punti di riferimento anatomici del volto (come occhi, naso e bocca), che vengono allineati e interpolati tra le due identità prima di essere fusi nello spazio dei pixel con l’obiettivo di produrre un’immagine visivamente coerente e plausibile.
+
+Più recentemente, l’introduzione del deep learning ha portato allo sviluppo di approcci deep learning-based, che non si limitano alla fusione geometrica delle immagini, ma sfruttano modelli neurali per generare o ottimizzare direttamente la rappresentazione facciale.
+In questi sistemi l’immagine viene trasformata in una rappresentazione numerica astratta appresa dal modello durante l’addestramento.
+
+Questo approccio risulta notevolmente efficace rispetto alle tecniche basate esclusivamente su manipolazioni geometriche o pixel-level, poiché permettono di agire direttamente sulla rappresentazione utilizzata dal sistema di riconoscimento che prende la decisione. Infatti, i modelli di face recognition basati su deep learning non confrontano le immagini a livello di pixel, ma valutano la somiglianza tra vettori all'interno dello spazio appreso dal modello.
 
 In altre parole, un attacco guidato dagli embedding non mira unicamente a produrre un'immagine visivamente plausibile, ma a generare un volto che si collochi in una regione dello spazio delle feature compatibile con più identità. In questo modo, l'immagine morphed può risultare sufficientemente simile, secondo la metrica adottata dal modello, sia all'identità di partenza sia a quella con cui viene combinata, aumentando la probabilità di superare con successo la fase di verifica.
 
-Siano $z_C$ e $z_A$ gli embedding normalizzati associati ai due volti sorgenti (ad esempio \textit{criminal} e \textit{accomplice}). L'obiettivo dell'attacco è ottenere un embedding intermedio $z_M$, che rappresenti una combinazione delle due identità e risulti sufficientemente vicino a entrambi nello spazio metrico utilizzato dal sistema di face recognition. Tale combinazione può essere espressa tramite una funzione di interpolazione parametrizzata da $t \in [0, 1]$, che controlla la posizione del punto generato tra le identità $C$ e $A$.
+Siano $z_C$ e $z_A$ gli embedding normalizzati associati ai due volti sorgenti (ad esempio \textit{criminal} e \textit{accomplice}). L'obiettivo dell'attacco è ottenere un embedding intermedio $z_M$, che rappresenti una combinazione delle due identità e risulti sufficientemente vicino a entrambi nello spazio utilizzato dal sistema di face recognition.
+
+Tale combinazione può essere espressa tramite una funzione di interpolazione parametrizzata da $t \in [0, 1]$, che controlla la posizione del punto generato tra le identità $C$ e $A$.
 
 In letteratura vengono comunemente utilizzati due approcci:
 
@@ -183,12 +197,13 @@ In letteratura vengono comunemente utilizzati due approcci:
     Il principale limite dell'interpolazione lineare è che funziona correttamente solo in uno spazio lineare. Tuttavia, nei moderni sistemi di face recognition come ArcFace, gli embedding vengono solitamente normalizzati e distribuiti sulla superficie di un'ipersfera unitaria.
     Applicare una combinazione lineare tra due embedding produce in genere un punto che cade all'interno della sfera, cioè fuori dalla superficie su cui si distribuiscono normalmente le rappresentazioni facciali.
 
-    Geometricamente, la LERP non segue la curva della sfera, ma si muove lungo la corda che collega i due punti. Questo introduce un errore geometrico, perché l'interpolazione non rispetta la struttura dello spazio in cui il sistema misura la somiglianza tra identità \cite{10007987}.
+    Geometricamente, la LERP non segue la curva della sfera~\ref{fig:Confornto LERP e SLERP}, ma si muove lungo la corda che collega i due punti. Questo introduce un errore geometrico, perché l'interpolazione non rispetta la struttura dello spazio in cui il sistema misura la somiglianza tra identità \cite{10007987}.
 
     Per ottenere una rappresentazione coerente con lo spazio geometrico utilizzato dai modelli di face recognition, risulta più appropriato utilizzare la funzione di SLERP che mantiene l'interpolazione sulla superficie dell'ipersfera.
 
     \item \textbf{Interpolazione Lineare Sferica (SLERP)}
     \label{sec:slerp}
+
     La funzione SLERP tra due embedding normalizzati $z_C$ e $z_A$ è definita come:
 
     \[
@@ -198,11 +213,11 @@ In letteratura vengono comunemente utilizzati due approcci:
     \[
     \theta = \arccos(z_A \cdot z_C)
     \]
-    Questa formula è costruita in modo che il punto interpolato sia una combinazione pesata dei due vettori, ma con pesi trigonometrici tali da farlo restare sulla sfera. In particolare, i coefficienti dipendono dall'angolo $\theta$ e rappresentano quanto il vettore risultante si avvicina a ciascuna entità di partenza.
+    Questa formula è costruita in modo che il punto interpolato sia una combinazione pesata dei due vettori, ma con pesi tali da farlo restare sulla sfera. In particolare, i coefficienti dipendono dall'angolo $\theta$ e rappresentano quanto il vettore risultante si avvicina a ciascuna entità di partenza.
 
-    Questa formulazione garantisce una proprietà fondamentale: l'interpolazione avviene preservando la norma del vettore risultante. In particolare, se gli embedding di partenza sono normalizzati, anche il vettore ottenuto tramite SLERP risulta normalizzato. Di conseguenza, l'embedding interpolato appartiene ancora alla superficie dell'ipersfera unitaria, mantenendo coerenza con la geometria dello spazio in cui operano i modelli di face recognition.
+    Questa formulazione garantisce una proprietà fondamentale: l'interpolazione avviene preservando la norma del vettore risultante. Questo significa che se gli embedding di partenza sono normalizzati, anche il vettore ottenuto tramite SLERP risulta normalizzato. Di conseguenza, l'embedding interpolato appartiene ancora alla superficie dell'ipersfera unitaria, mantenendo coerenza con la geometria dello spazio delle feature.
 
-    La SLERP è definita in modo tale che il parametro di interpolazione $t$ controlli direttamente la posizione del punto lungo l'arco. Al crescere di $t$, l'angolo tra il vettore iniziale e il vettore interpolato aumenta in maniera proporzionale. In altre parole, se $\theta$ rappresenta l'angolo complessivo tra i due vettori estremi, SLERP costruisce il punto interpolato ad una distanza angolare pari a $t\theta$ dal primo vettore. Questo significa che, aumentando $t$, ci si sposta lungo la superficie dell'ipersfera in modo uniforme, seguendo l'arco che collega i due punti.
+    La SLERP è definita in modo tale che il parametro di interpolazione $t$ controlli direttamente la posizione del punto lungo l'arco. Al crescere di $t$, l'angolo tra il vettore iniziale e il vettore interpolato aumenta in maniera proporzionale. In altre parole, se $\theta$ rappresenta l'angolo complessivo tra i due vettori estremi, SLERP costruisce il punto interpolato ad una distanza angolare pari a $t\theta$ dal primo vettore.
 
     Queste caratteristiche sono particolarmente rilevanti in contesti come face recognition, in cui la similarità tra embedding viene valutata tramite cosine similarity e quindi dipende dall'angolo tra i due vettori.
 
@@ -214,7 +229,7 @@ In letteratura vengono comunemente utilizzati due approcci:
 \begin{figure}[H]
     \centering
     \includegraphics[width=.5\linewidth]{figures/SLERP_vs_LERP.png}
-    \caption{Confronto geometrico tra Interpolazione Lineare e Interpolazione Sferica}
+    \caption{Confronto geometrico tra LERP e SLERP}
     \label{fig:Confornto LERP e SLERP}
 \end{figure}
 
@@ -231,7 +246,7 @@ L'\textit{International Civil Aviation Organization} (ICAO) considera la foto fa
 
 Per questo motivo, la fotografia del volto presente sui documenti di identità elettronici deve essere una rappresentazione standardizzata, coerente e confrontabile, tale da garantire interoperabilità internazionale. ICAO definisce quindi una serie di requisiti che le immagini facciali devono rispettare, non solo per consentire l'identificazione visiva da parte di un operatore umano, ma soprattutto per assicurare il corretto riconoscimento biometrico da parte dei sistemi di face recognition.
 
-La conformità delle immagini viene definita attraverso vincoli descritti nello standard ISO e nelle linee guida ICAO, formalizzati in una serie di test che verificano aspetti geometrici e fotografici dell'immagine.
+La conformità delle immagini viene definita attraverso vincoli descritti nello standard ISO 39794-5 e nelle linee guida ICAO, formalizzati in una serie di test che verificano aspetti geometrici e fotografici dell'immagine \cite{ferrara2012face}.
 
 \begin{itemize}
     \item \textbf{Vincoli geometrici}: requisiti relativi alla \emph{dimensione} del volto e alla sua \emph{posizione} all'interno dell'immagine. Tali vincoli non sono espressi in modo qualitativo, ma vengono definiti attraverso misure geometriche standardizzate, in modo da garantire un corretto inquadramento e una rappresentazione coerente del soggetto.
@@ -239,7 +254,7 @@ La conformità delle immagini viene definita attraverso vincoli descritti nello 
     \item \textbf{Vincoli fotometrici}: requisiti che riguardano la qualità fotografica dell'immagine e la corretta postura del soggetto durante l'acquisizione. L'obiettivo è garantire che il volto sia chiaramente visibile e riconoscibile, evitando condizioni che possano compromettere l'identificazione biometrica.
 \end{itemize}
 
-La seconda categoria risulta particolarmente complessa da valutare poiché comprende requisiti che non possono essere descritti unicamente tramite misure geometriche oggettive, ma dipendono anche da condizioni qualitative e percettive difficili da formalizzare. Essa include infatti caratteristiche che un osservatore umano è in grado di valutare con relativa facilità, mentre un sistema automatico deve necessariamente tradurre tali valutazioni in parametri numerici misurabili. Inoltre, la qualità fotografica intesa in senso tradizionale (ad esempio nitidezza o assenza di rumore) non coincide sempre con la qualità richiesta dallo standard ISO/ICAO, su cui invece influiscono altri aspetti come illuminazione, ombre, riflessi, sfondo e visibilità dei tratti facciali \cite{6197711}.
+La seconda categoria risulta particolarmente complessa da valutare poiché comprende requisiti che non possono essere descritti unicamente tramite misure geometriche oggettive, ma dipendono anche da condizioni qualitative e percettive difficili da formalizzare. Essa include infatti caratteristiche che un osservatore umano è in grado di valutare con relativa facilità, mentre un sistema automatico deve necessariamente tradurre tali valutazioni in parametri numerici misurabili. Inoltre, la qualità fotografica intesa in senso tradizionale (ad esempio nitidezza o assenza di rumore) non coincide sempre con la qualità richiesta dallo standard ISO/ICAO, su cui invece influiscono altri aspetti come illuminazione, ombre, riflessi, sfondo e visibilità dei tratti facciali.
 
 Uno dei requisiti di questa categoria è la valutazione dello sfondo. Lo sfondo non è solo un elemento estetico, ma ha un impatto diretto sulla qualità biometrica della fotografia.
 
@@ -249,11 +264,13 @@ Di conseguenza, uno sfondo controllato e omogeneo rappresenta un prerequisito im
 
 \subsection{Descrizione dei diversi metodi testati}
 
-Per ottenere immagini conformi ai requisiti relativi allo sfondo previsti dallo standard ISO/ICAO, è stato necessario introdurre una fase di pre-processing finalizzata alla normalizzazione del background. A tal fine, sono stati adottati modelli di \textit{background removal}, ovvero sistemi basati su tecniche di segmentazione automatica in grado di separare il soggetto dallo sfondo e generare una maschera utile alla sua sostituzione con uno sfondo uniforme.
+Per ottenere immagini conformi ai requisiti relativi allo sfondo previsti dallo standard ISO/ICAO, è stato necessario introdurre una fase di post-processing finalizzata alla normalizzazione del background. A tal fine, sono stati adottati modelli di \textit{background removal}, ovvero sistemi basati su tecniche di segmentazione automatica in grado di separare il soggetto dallo sfondo e generare una maschera utile alla sua sostituzione con uno sfondo uniforme.
 
 Questo passaggio risulta particolarmente delicato, poiché una rimozione non accurata può introdurre artefatti visivi, ad esempio bordi irregolari lungo il profilo del volto oppure perdita di dettagli come capelli o orecchie, che possono compromettere la naturalezza dell'immagine e, di conseguenza, la sua conformità agli standard. Per questo motivo è stata posta particolare attenzione nella scelta di modelli in grado di garantire una segmentazione precisa e stabile, riducendo al minimo errori lungo i contorni e possibili ambiguità, senza però eliminare informazioni essenziali per l'identificazione biometrica.
 
-Nei moderni sistemi di segmentazione basati su deep learning, la maggior parte delle architetture segue una struttura generale di tipo \textit{encoder-decoder}. L'immagine di input viene inizialmente elaborata da una rete di codifica, detta anche \textit{backbone} o \textit{encoder}, che ha il compito di estrarre una rappresentazione semantica significativa della scena. L'immagine viene analizzata mediante una sequenza di livelli convoluzionali che apprendono feature gerarchiche: nei primi strati vengono rilevati pattern semplici e generici, mentre negli strati più profondi la rete apprende rappresentazioni sempre più complesse e semantiche.
+Nei moderni sistemi di segmentazione basati su deep learning, la maggior parte delle architetture segue una struttura generale di tipo \textit{encoder-decoder}.
+
+L'immagine di input viene inizialmente elaborata da una rete di codifica, detta anche \textit{backbone} o \textit{encoder}, che ha il compito di estrarre una rappresentazione semantica significativa della scena. L'immagine viene analizzata mediante una sequenza di livelli convoluzionali che apprendono feature gerarchiche: nei primi strati vengono rilevati pattern semplici e generici, mentre negli strati più profondi la rete apprende rappresentazioni sempre più complesse e semantiche.
 Durante questo processo, l'encoder tende progressivamente a ridurre la risoluzione spaziale dell'immagine (\textit{downsampling}), questo permette di diminuire il costo computazionale e, soprattutto, di aumentare il \textit{receptive field} dei neuroni, consentendo alla rete di catturare contesti più ampi e informazioni globali utili per riconoscere correttamente gli oggetti presenti nella scena.
 
 Successivamente, una rete di decodifica proietta tali informazioni nello spazio originale dei pixel, riportando la rappresentazione alla risoluzione dell'immagine di partenza (\textit{upsampling}). Il risultato finale prodotto dal decoder è generalmente una mappa di valori reali, detta mappa di \textit{logits}, che costituisce una rappresentazione intermedia non ancora direttamente interpretabile.
@@ -269,49 +286,54 @@ Nei modelli di \textit{semantic segmentation}, la rimozione dello sfondo viene t
 \[
 P(p) \in \{0,1\}
 \]
-
+In base al numero di categorie previste nel processo di classificazione, si distinguono due principali paradigmi: binary segmentation e multi-class segmentation.
 \begin{itemize}
-    \item \textbf{Binary / single-class segmentation:} U\textsuperscript{2}-Net, SAM2.
+    \item \textbf{Binary segmentation}
 
     La \textit{binary segmentation} è una forma di segmentazione in cui l'obiettivo è distinguere soltanto due categorie: \textit{foreground} e \textit{background}. In questo caso, a ciascun pixel dell'immagine viene assegnata una probabilità di appartenenza al soggetto, da cui si ottiene una maschera binaria finale.
 
-    Nel progetto sono stati testati modelli come \textbf{U\textsuperscript{2}-Net}, utilizzato nella variante addestrata per la segmentazione di soggetti umani, noto per la buona capacità di estrarre dettagli fini grazie a una struttura encoder-decoder annidata, e \textbf{SAM2}, basato su un approccio di segmentazione generalista \textit{prompt-based}, in cui la predizione viene guidata tramite input come punti o bounding box, permettendo di ottenere maschere accurate anche su categorie non viste durante l'addestramento.
+    Nel progetto sono stati testati modelli come \textbf{U\textsuperscript{2}-Net} \cite{qin2020u2}, utilizzato nella variante addestrata per la segmentazione di soggetti umani, noto per la buona capacità di estrarre dettagli fini grazie a una struttura encoder-decoder annidata, \textbf{SAM2} \cite{ravi2024sam2segmentimages}, basato su un approccio di segmentazione \textit{prompt-based}, in cui la predizione viene guidata tramite input quali punti o bounding box, permettendo di ottenere maschere accurate anche su categorie non viste durante l'addestramento.
+    Nel lavoro, i prompt forniti a SAM2 sono generati automaticamente a partire dalle bounding box prodotte dal modello di object detection YOLO. In questo modo, il sistema combina le capacità di localizzazione di YOLO con la precisione di segmentazione di SAM2, realizzando una pipeline integrata di rilevamento e segmentazione.
 
-    \item \textbf{Multi-class segmentation:} SegFormer, BiSeNet.
+    \item \textbf{Multi-class segmentation}
 
     La \textit{multi-class segmentation} estende l'approccio utilizzato nella binary segmentation introducendo più classi possibili. In questo caso ogni pixel viene assegnato a una tra $C$ categorie differenti, producendo una segmentazione più dettagliata rispetto alla semplice distinzione foreground-background.
 
-    Tra i modelli testati rientrano \textbf{SegFormer}, basato su un backbone Transformer e reso specializzato sul volto tramite addestramento su un dataset facciale, e \textbf{BiSeNet}, con backbone ResNet, progettato per combinare informazioni di dettaglio spaziale e contesto globale, utilizzando ResNet come estrattore di caratteristiche per produrre una mappa di segmentazione multi-classe a livello di pixel.
+    Sebbene l’obiettivo finale del progetto sia l’isolamento del soggetto dallo sfondo, l’impiego di un modello multi-classe, con classi specifiche per le componenti facciali, permette di preservare le informazioni strutturali del volto, evitando la perdita di dettagli che potrebbe verificarsi adottando direttamente una segmentazione binaria.
+    In fase successiva all'identificazione le diverse classi del volto vengono unite in un’unica classe di foreground, riconducendo il problema a una rappresentazione binaria funzionale all’obiettivo.
+
+    Tra i modelli testati rientrano \textbf{SegFormer} \cite{xie2021segformer}, basato su un backbone Transformer e reso specializzato sul volto tramite addestramento su un dataset facciale, e \textbf{BiSeNet} \cite{yu2018bisenetbilateralsegmentationnetwork}, con backbone ResNet \cite{garcia2020review}, progettato per combinare informazioni di dettaglio spaziale e contesto globale, utilizzando ResNet come estrattore di caratteristiche per produrre una mappa di segmentazione multi-classe a livello di pixel.
 
 \end{itemize}
 
-\subsubsection{Modelli di alpha matting:  \normalfont MODNet, BEN2}
+\subsubsection{Modelli di alpha matting}
 Nei modelli di \textit{alpha matting} la separazione non viene vista come una classificazione, ma come una stima continua. Il modello produce una mappa di trasparenza (\textit{alpha matte}), in cui ogni pixel $p$ assume un valore $P(p)$ compreso tra 0 e 1, che rappresenta la porzione di foreground presente in quel pixel:
 \[
 P(p) \in [0,1]
 \]
 
-In questo contesto sono stati valutati modelli come \textbf{MODNet}, progettato specificamente per il portrait matting in tempo reale, e \textbf{BEN2}, utilizzato per ottenere una separazione più precisa nelle zone di transizione tra soggetto e sfondo
+In questo contesto sono stati valutati modelli come \textbf{MODNet} \cite{hattmodnet}, progettato specificamente per il portrait matting in tempo reale, e \textbf{BEN2} \cite{meyer2025benusingconfidenceguidedmatting}, utilizzato per ottenere una separazione più precisa nelle zone di transizione tra soggetto e sfondo
 
 \subsection{Confronto visivo e commenti}
 Definite le basi teoriche e le principali differenze tra gli approcci considerati, analizziamo i risultati ottenuti dai modelli selezionati,
 con l’obiettivo di valutarne in maniera concreta l’efficacia rispetto agli obiettivi del progetto.
 
 L'analisi è guidata da una doppia esigenza. Da un lato si vuole garantire un’elevata accuratezza visiva della segmentazione.
-Questo significa che la maschera generata deve isolare correttamente il soggetto, preservandone la struttura complessiva, i contorni e i dettagli significativi,
-evitando sia l’inclusione di porzioni di sfondo (\textit{false positive}), che comprometterebbe la pulizia del risultato, sia l’eliminazione di parti del volto (\textit{false negative}), che potrebbe comportare una perdita di informazioni rilevanti.
 Dall'altro lato la segmentazione non deve alterare tratti distintivi del volto al punto da modificare il comportamento dei sistemi di riconoscimento facciale.
-In altre parole, la rimozione dello sfondo non deve ridurre né aumentare artificialmente la probabilità che un’immagine venga accettata da un sistema biometrico.
+
+Questo significa che la maschera generata deve isolare correttamente il soggetto, preservandone struttura, contorni e dettagli significativi, evitando sia l’inclusione di porzioni di sfondo (\textit{false positive}), sia l’eliminazione di parti del volto (\textit{false negative}), che comporterebbero una perdita di qualità e di informazioni rilevanti.
 
 Per verificare che la segmentazione non incida sul comportamento dei sistemi di riconoscimento facciale per ogni modello è stata calcolata la relativa
 \textit{Morph Acceptance Probability (MAP) matrix}, utilizzata per misurare la probabilità che un’immagine morphed venga accettata dai sistemi biometrici considerati.
 La MAP rappresenta una matrice di probabilità che descrive la percentuale di immagini morph in grado di superare le soglie di accettazione dei modelli di face recognition.
+
 In particolare, le righe della matrice corrispondono al numero di immagini disponibili per ciascun soggetto coinvolto nel morph, mentre le colonne rappresentano il numero di sistemi biometrici che devono simultaneamente accettare l’immagine affinché l’attacco sia considerato riuscito.
+
 Nel contesto di questa analisi, la MAP viene calcolata utilizzando quattro modelli di face recognition: MagFace, AdaFace, CurricularFace e SwinFace.
 
 Il confronto tra i valori ottenuti sulle immagini originali e quelli calcolati sulle immagini segmentate consente di verificare se l’operazione di rimozione dello sfondo alteri la probabilità di accettazione dei morph.
 
-Ogni matrice di probabilità può essere così interpretata
+Ogni matrice di probabilità può essere così interpretata:
 \begin{table}[h]
 \centering
 \begin{tabular}{c|cccc}
@@ -327,7 +349,7 @@ Ogni matrice di probabilità può essere così interpretata
 
 Dove ogni elemento $P(a,f)$ rappresenta la probabilità che un’immagine morph venga accettata da almeno $f$ sistemi biometrici con $a$ immagini disponibili per soggetto.
 
-La matrice rappresenta la MAP delle immagini morphed originali e viene utilizzata come riferimento di base per il confronto con i risultati ottenuti dai diversi modelli analizzati.
+La matrice~\ref{tab:morphed_map} rappresenta la MAP delle immagini morphed originali e viene utilizzata come riferimento di base per il confronto con i risultati ottenuti dai diversi modelli analizzati.
 \begin{table}[H]
 \centering
 \begin{tabular}{c|cccc}
@@ -339,11 +361,11 @@ La matrice rappresenta la MAP delle immagini morphed originali e viene utilizzat
 \hline
 \end{tabular}
 \caption{MAP immagini morphed originali}
+\label{tab:morphed_map}
 \end{table}
 
 %---------------------------------------------------------------------------------------------------
 
-\begin{minipage}{\textwidth}
 \subsubsection{U\textsuperscript{2}-Net}
 \begin{figure}[H]
 \centering
@@ -383,11 +405,9 @@ La matrice rappresenta la MAP delle immagini morphed originali e viene utilizzat
 
 Rispetto alla MAP di riferimento, i valori ottenuti con U\textsuperscript{2}-Net mostrano scostamenti minimi. La probabilità di accettazione rimane sostanzialmente invariata, in particolare nella cella più restrittiva (2,4), indicando che la segmentazione non altera in modo significativo il comportamento biometrico dei morph.
 
-Dal punto di vista qualitativo, trattandosi di un modello di segmentazione generica, il rilevamento del soggetto risulta complessivamente corretto ma poco preciso nei dettagli fini, in particolare lungo i contorni e nelle aree dei capelli.
+Dal punto di vista qualitativo, trattandosi di un modello di segmentazione generica, il rilevamento del soggetto risulta complessivamente corretto ma poco preciso nei dettagli fini come contorni e capelli.
 
-\end{minipage}
 
-\begin{minipage}{\textwidth}
 \subsubsection{Sam2}
 \begin{figure}[H]
 \centering
@@ -429,9 +449,7 @@ Nel caso di Sam2 si osserva una lieve riduzione dei valori rispetto alla MAP di 
 
 Qualitativamente, la segmentazione risulta più coerente nella separazione foreground/background rispetto a U\textsuperscript{2}-Net, ma permane una difficoltà nella gestione dei dettagli sottili, come le ciocche di capelli.
 
-\end{minipage}
 
-\begin{minipage}{\textwidth}
 \subsubsection{SegFormer}
 \begin{figure}[H]
 \centering
@@ -473,9 +491,7 @@ Con SegFormer, modello addestrato per il face parsing, si osserva una segmentazi
 
 Notiamo un miglioramento qualitativo rispetto ai modelli precedenti, tuttavia anche in questo caso la segmentazione dei capelli rimane poco accurata, con contorni netti o semplificati.
 
-\end{minipage}
 
-\begin{minipage}{\textwidth}
 \subsubsection{BiSeNet}
 \begin{figure}[H]
 \centering
@@ -517,10 +533,8 @@ Analogamente a SegFormer, BiSeNet mostra una buona capacità di identificazione 
 
 Nonostante la migliore localizzazione del volto, la gestione delle aree complesse come i capelli non risulta ancora sufficientemente dettagliata.
 
-\end{minipage}
 
 
-\begin{minipage}{\textwidth}
 \subsubsection{BEN2}
 \begin{figure}[H]
 \centering
@@ -562,10 +576,6 @@ Con il passaggio a BEN2, appartenente alla categoria dei modelli di alpha mattin
 
 Dal punto di vista quantitativo, la MAP rimane sostanzialmente allineata alla baseline. Si osserva persino un lieve incremento nella cella più restrittiva (2,4).
 
-\end{minipage}
-
-
-\begin{minipage}{\textwidth}
 \subsubsection{ModNet}
 \begin{figure}[H]
 \centering
@@ -606,8 +616,6 @@ ModNet conferma ulteriormente i vantaggi dell’approccio di alpha matting. La t
 
 Anche in questo caso, i valori della MAP rimangono molto vicini a quelli delle immagini originali.
 
-\end{minipage}
-
 
 
 %----------------------------------------------------------------------------------------
@@ -617,7 +625,7 @@ Anche in questo caso, i valori della MAP rimangono molto vicini a quelli delle i
 
 \section{Definizione del problema inverso: il demorphing}
 
-Nei contesti di controllo automatico ai confini (\textit{Automated Border Control}) un attacco biometrico può compromettere la validità del sistema. Un'immagine facciale memorizzata nel documento può essere stata generata combinando due identità distinte, producendo un volto artificiale che risulta compatibile con entrambi i soggetti coinvolti. Il sistema di confronto biometrico potrebbe quindi accettare sia il legittimo titolare del documento sia un individuo diverso.
+Nei contesti di controllo automatico ai confini (\textit{Automated Border Control}) un attacco biometrico può compromettere la validità del sistema. Un'immagine facciale memorizzata nel documento può essere stata generata combinando due identità distinte, producendo un volto artificiale che risulta compatibile con entrambi i soggetti coinvolti.
 
 Un approccio per affrontare questo problema consiste nel sfruttare la disponibilità simultanea di due immagini durante la fase di verifica: la fotografia presente nel documento $M$ e una fotografia acquisita dal vivo $\tilde{C}$. In questo scenario, è possibile tentare di invertire il processo di morphing, con l'obiettivo di separare le identità combinate nell'immagine del documento e individuare eventuali anomalie riconducibili a un morphing attack.
 
@@ -634,20 +642,21 @@ Durante la verifica, si calcola quindi un'immagine \textit{demorphed} $D$ sottra
 \[
 D = M - \tilde{C}
 \]
-A questo punto, il comportamento del sistema dipende dal fatto che il documento sia genuino o morphed. Se il documento è genuino, allora la sottrazione rimuove una componente compatibile con l'identità reale, lasciando un'immagine ancora simile al soggetto presente al controllo ($D \approx C$). In questo caso, il confronto biometrico tra $D$ e $\tilde{C}$ produce un punteggio di similarità elevato.
+A questo punto, il comportamento del sistema dipende dal fatto che il documento sia genuino o morphed.
 
-Al contrario, se l'immagine del documento è un morph tra due identità, la sottrazione della live image elimina principalmente la componente corrispondente al criminal, lasciando una rappresentazione più vicina all'accomplice ($D \approx A$). Di conseguenza, il confronto tra $D$ e $\tilde{C}$ produce un punteggio di similarità basso, fornendo un'indicazione della presenza di un morphing attack.
+Se il documento è genuino, allora la sottrazione rimuove una componente compatibile con l'identità reale, lasciando un'immagine ancora simile al soggetto presente al controllo ($D \approx C$). In questo caso, il confronto biometrico tra $D$ e $\tilde{C}$ produce un punteggio di similarità elevato.
+
+Al contrario, se l'immagine del documento è un morph tra le due identità, la sottrazione dell'immagine live elimina principalmente la componente corrispondente a $C$, lasciando una rappresentazione più vicina all'accomplice ($D \approx A$). Di conseguenza, il confronto tra $D$ e $\tilde{C}$ produce un punteggio di similarità basso, fornendo un'indicazione della presenza di un morphing attack.
 
 Questo approccio consente quindi di rilevare il morphing sfruttando l'informazione fornita dall'immagine live acquisita durante il controllo \cite{ferrara2017face}.
 
-Tale modello, pur essendo intuitivo, non riflette il comportamento reale dei moderni sistemi biometrici. Nei sistemi di face recognition basati su deep learning, infatti, il morphing non avviene nello spazio dei pixel, ma nello spazio degli embedding. L'immagine morphed è il risultato di un'interpolazione tra vettori identitari normalizzati, e la decisione biometrica viene presa confrontando tali rappresentazioni nello spazio metrico appreso. Ricostruire le identità sorgenti a partire dall'immagine morphed non equivale quindi a eseguire una semplice sottrazione diretta, ma nel ricostruire un embedding complementare nello spazio delle feature.
+Tale modello, pur essendo intuitivo, non riflette il comportamento reale dei moderni sistemi biometrici. Nei sistemi di face recognition basati su deep learning, infatti, il morphing non avviene nello spazio dei pixel, ma nello spazio degli embedding. L'immagine morphed è il risultato di un'interpolazione tra vettori identificativi normalizzati, e la decisione biometrica viene presa confrontando tali rappresentazioni nello spazio metrico appreso. Ricostruire le identità sorgenti a partire dall'immagine morphed non equivale quindi a eseguire una semplice sottrazione diretta, ma a ricostruire un embedding complementare nello spazio delle feature.
 
 L'obiettivo è stimare l'embedding dell'identità mancante, ovvero il volto sorgente $C$, assumendo che l'immagine morphed sia stata generata tramite un'interpolazione tra due identità. In altre parole, a partire dall'embedding della fotografia del documento $z_M$ e dall'embedding della fotografia acquisita al controllo $z_{\tilde{C}}$, si vuole produrre un vettore che rappresenti l'identità complementare rispetto a quella osservata al controllo, cioè una possibile ricostruzione dell'altro soggetto coinvolto nel morphing.
 
-Una volta stimato tale embedding, è necessario ricondurlo nuovamente nello spazio delle immagini per poter effettuare un confronto visivo o biometrico coerente. Per questo passaggio viene impiegato un modello generativo compatibile con lo spazio degli embedding di ArcFace, nello specifico \textbf{Arc2Face}. Questo modello è progettato per sintetizzare un'immagine facciale a partire da un embedding identitario, preservandone le caratteristiche biometriche. In tal modo, l'embedding ricostruito tramite inversione può essere trasformato in un volto sintetico coerente, il cui embedding, ricalcolato mediante il modello di face recognition, può essere confrontato con quello della fotografia live.
+Una volta stimato tale embedding, è necessario ricondurlo nuovamente nello spazio delle immagini per poter effettuare un confronto visivo o biometrico coerente. Per questo passaggio viene impiegato un modello generativo compatibile con lo spazio degli embedding di ArcFace, nello specifico Arc2Face. Questo modello è progettato per sintetizzare un'immagine facciale a partire da un embedding identitario, preservandone le caratteristiche biometriche. In tal modo, l'embedding ricostruito tramite inversione può essere trasformato in un volto sintetico coerente, il cui embedding, ricalcolato mediante il modello di face recognition, può essere confrontato con quello della fotografia live.
 
-Equivalentemente al caso lineare semplificato, un documento può essere considerato genuino se l'embedding ricostruito risulta simile all'embedding associato alla fotografia $\tilde{C}$ scattata ai controlli. Al contrario, in presenza di un morphing attack, l'operazione di inversione tende a produrre un embedding più vicino alla seconda identità sorgente $A$, cioè all'\textit{accomplice}. Di conseguenza, il confronto tra l'embedding ricostruito e quello della fotografia live restituisce una similarità ridotta, indice della presenza di un'immagine morphed nel documento.
-
+Equivalentemente al caso lineare semplificato, un documento può essere considerato genuino se l'embedding ricostruito risulta simile all'embedding associato alla fotografia $\tilde{C}$ scattata ai controlli. Al contrario, in presenza di un morphing attack, l'operazione di inversione tende a produrre un embedding più vicino alla seconda identità sorgente $A$, cioè all'\textit{accomplice}.
 \section{Inversione approssimata della SLERP}
 
 Assumendo che l'immagine morphed sia il risultato esatto di un'interpolazione sferica tra due vettori normalizzati, il demorphing può essere visto come un problema inverso: dato il vettore interpolato e uno dei due estremi, si vuole ricavare l'altro vettore sorgente.
@@ -691,18 +700,26 @@ La stima dell'embedding mancante dipende in modo diretto dal parametro $t$ che c
 \subsection{Dataset utilizzati}
 \subsubsection{Chicago Face Database (CFD)}
 
-Il \textit{Chicago Face Database} (CFD) è un database di immagini facciali ad alta risoluzione sviluppato da Ma, Correll e Wittenbrink (2015), comprendente fotografie controllate e un insieme di valutazioni soggettive e oggettive delle caratteristiche morfologiche del volto. Il dataset dispone di centinaia di volti maschili e femminili appartenenti a differenti gruppi etnici. Tutte le fotografie sono state scattate in ambiente controllato: con distanza fissa tra soggetto e fotocamera, altezza della camera allineata al livello degli occhi, sfondo bianco uniforme e sistema di illuminazione a tre punti per ridurre al minimo ombre e variazioni luminose. I soggetti sono ritratti in posa frontale, con testa verticale e sguardo diretto verso l'obiettivo. Inoltre, le fotografie sono state successivamente ritagliate e normalizzate in modo da uniformare le proporzioni dei principali tratti facciali \cite{ma2015chicago}.
+Il \textit{Chicago Face Database} (CFD) è un database di immagini facciali ad alta risoluzione sviluppato da Ma, Correll e Wittenbrink (2015), comprendente fotografie controllate e un insieme di valutazioni soggettive e oggettive delle caratteristiche morfologiche del volto. Il dataset dispone di centinaia di volti maschili e femminili appartenenti a differenti gruppi etnici.
+
+Tutte le fotografie sono state scattate in ambiente controllato: con distanza fissa tra soggetto e fotocamera, altezza della camera allineata al livello degli occhi, sfondo bianco uniforme e sistema di illuminazione a tre punti per ridurre al minimo ombre e variazioni luminose. I soggetti sono ritratti in posa frontale, con testa verticale e sguardo diretto verso l'obiettivo. Inoltre, le fotografie sono state successivamente ritagliate e normalizzate in modo da uniformare le proporzioni dei principali tratti facciali \cite{ma2015chicago}.
 
 Queste caratteristiche risultano coerenti con i requisiti internazionali ISO/IEC per l'acquisizione di immagini facciali destinate a sistemi biometrici e di conseguenza adatte alla simulazione della generazione di immagini morphed.
 
 \subsubsection{FEI Face Database}
 
-Il \textit{FEI Face Database} è un dataset di immagini facciali sviluppato presso l'Artificial Intelligence Laboratory della FEI University, comprendente fotografie relative a 200 individui distinti maschili e femminili. Tutte le immagini sono state acquisite in ambiente controllato: sfondo bianco uniforme, illuminazione relativamente costante, risoluzione standard. Per ogni soggetto sono disponibili 14 immagini che lo ritraggono con diverse pose del capo e differenti espressioni facciali.
+Il \textit{FEI Face Database} è un dataset di immagini facciali sviluppato presso l'Artificial Intelligence Laboratory della FEI University, comprendente fotografie relative a 200 individui distinti maschili e femminili.
+
+Tutte le immagini sono state acquisite in ambiente controllato: sfondo bianco uniforme, illuminazione relativamente costante, risoluzione standard.
+
+Per ogni soggetto sono disponibili 14 immagini che lo ritraggono con diverse pose del capo e differenti espressioni facciali.
 Questa caratteristica consente di simulare in modo realistico uno scenario di Automatic Border Control (ABC). Nei sistemi ABC, l'identità del viaggiatore viene verificata confrontando un'immagine facciale scattata in tempo reale al gate con l'immagine digitale memorizzata nel documento di viaggio elettronico (eMRTD).
 
 Questo scenario viene riprodotto sfruttando la struttura del dataset:
 \begin{itemize}[nosep]
-    \item L'immagine del documento viene generata a partire dalle fotografie frontali del database, conformi agli standard ISO/IEC per immagini facciali biometriche. Nel caso di immagini bona fide, l'immagine del documento coincide con una fotografia frontale genuina del soggetto. Invece, nel caso di attacco morphing, l'immagine del documento viene creata mediante algoritmi di morphing a partire da due soggetti distinti.
+    \item L'immagine del documento viene generata a partire dalle fotografie frontali del database, conformi agli standard ISO/IEC per immagini facciali biometriche.
+
+    Nel caso di immagini bona fide, l'immagine del documento coincide con una fotografia frontale genuina del soggetto. Invece, nel caso di attacco morphing, l'immagine del documento viene creata mediante algoritmi di morphing a partire da due soggetti distinti.
     \item L'immagine acquisita in tempo reale viene rappresentata da un'altra fotografia dello stesso soggetto, oppure, nel caso di attacco, di uno dei due soggetti utilizzati per generare il morph, ma caratterizzata da una diversa posa o espressione facciale.
 \end{itemize}
 
@@ -726,6 +743,13 @@ EMOCA è un modello di ricostruzione facciale 3D che, a partire da un'immagine 2
 
 ControlNet è un'estensione dei modelli di diffusione che permette di aggiungere un controllo sulla struttura dell'immagine durante la generazione. In particolare, la generazione dell'immagine finale è guidata da due tipologie di informazioni.
 Da un lato, intervengono le informazioni semantiche, rappresentate dagli embedding biometrici estratti mediante InsightFace. Dall'altro lato, la generazione è vincolata da informazioni geometriche, fornite dalla normal map prodotta da EMOCA. La combinazione di queste due componenti permette al sistema di gestire separatamente l'identità e la struttura del volto, ottenendo un'immagine finale coerente sia nell'identità sia nella struttura.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=.9\linewidth]{figures/pipeline.png}
+    \caption{Sintesi della pipeline generativa \cite{di2026arc2morph}}
+    \label{fig:pipeline}
+\end{figure}
 
 \section{Metriche di valutazione}
 La similarità tra le immagini è stata valutata mediante il calcolo della distanza coseno~\ref{sec:distanza_coseno} tra gli embedding biometrici estratti mediante il modello InsightFace. In questo spazio gli emebedding possono essere valutati in base alla loro distanza sulla superficie della sfera unitaria su cui sono definiti. In altre parole, la somiglianza tra i due volti confrontati diminuisce all'aumentare dell'angolo misurato tra i vettori corrispondenti.
@@ -876,11 +900,11 @@ Valori prossimi a zero indicano elevata similarità tra gli embedding, mentre va
 \hline
 ID1 & MORPH & ID2 & DEMORPH1 & DEMORPH2 \\
 \hline
-\includegraphics[width=0.18\textwidth]{figures/ides/5-11.jpg} &
-\includegraphics[width=0.18\textwidth]{figures/caso_ideale/M_5-11_23-11.jpg} &
-\includegraphics[width=0.18\textwidth]{figures/ides/23-11.jpg} &
-\includegraphics[width=0.18\textwidth]{figures/caso_ideale/D_5-11.jpg} &
-\includegraphics[width=0.18\textwidth]{figures/caso_ideale/D_23-11.jpg} \\
+\includegraphics[width=0.20\textwidth]{figures/ides/5-11.jpg} &
+\includegraphics[width=0.20\textwidth]{figures/caso_ideale/M_5-11_23-11.jpg} &
+\includegraphics[width=0.20\textwidth]{figures/ides/23-11.jpg} &
+\includegraphics[width=0.20\textwidth]{figures/caso_ideale/D_5-11.jpg} &
+\includegraphics[width=0.20\textwidth]{figures/caso_ideale/D_23-11.jpg} \\
 \hline
 \end{tabular}
 \caption{Simulazione caso ideale}
@@ -924,10 +948,10 @@ Analogamente, DEMORPH2 è stato ottenuto a partire da (MORPH, ID1) e ricostruisc
 \hline
 DOC & LIVE & DEMORPH & ID2 \\
 \hline
-\includegraphics[width=0.18\textwidth]{figures/caso_ideale/M_5-11_23-11.jpg} &
-\includegraphics[width=0.18\textwidth]{figures/ides/5-12.jpg} &
-\includegraphics[width=0.18\textwidth]{figures/caso_reale/D_M_5-12.jpg} &
-\includegraphics[width=0.18\textwidth]{figures/ides/23-11.jpg} \\
+\includegraphics[width=0.20\textwidth]{figures/caso_ideale/M_5-11_23-11.jpg} &
+\includegraphics[width=0.20\textwidth]{figures/ides/5-12.jpg} &
+\includegraphics[width=0.20\textwidth]{figures/caso_reale/D_M_5-12.jpg} &
+\includegraphics[width=0.20\textwidth]{figures/ides/23-11.jpg} \\
 \hline
 \end{tabular}
 
@@ -966,10 +990,10 @@ A scopo di verifica, è stata inoltre calcolata la distanza coseno tra l’immag
 \hline
 DOC & LIVE & DEMORPH & ID1 \\
 \hline
-\includegraphics[width=0.18\textwidth]{figures/caso_ideale/M_5-11_23-11.jpg} &
-\includegraphics[width=0.18\textwidth]{figures/ides/23-12.jpg} &
-\includegraphics[width=0.18\textwidth]{figures/caso_reale/D_M_23-12.jpg} &
-\includegraphics[width=0.18\textwidth]{figures/ides/5-11.jpg} \\
+\includegraphics[width=0.20\textwidth]{figures/caso_ideale/M_5-11_23-11.jpg} &
+\includegraphics[width=0.20\textwidth]{figures/ides/23-12.jpg} &
+\includegraphics[width=0.20\textwidth]{figures/caso_reale/D_M_23-12.jpg} &
+\includegraphics[width=0.20\textwidth]{figures/ides/5-11.jpg} \\
 \hline
 \end{tabular}
 \caption{Simulazione di un caso reale assumendo ID2 come soggetto criminale}
@@ -1011,6 +1035,7 @@ DOC & LIVE & DEMORPH1 \\
 \hline
 \end{tabular}
 \caption{Simulazione di un caso reale con documento bona fide del soggetto ID1}
+\label{tab:img_bona_fide_id1}
 \end{minipage}
 \hfill
 \begin{minipage}{0.48\textwidth}
@@ -1026,6 +1051,7 @@ DOC & LIVE & DEMORPH2 \\
 \hline
 \end{tabular}
 \caption{Simulazione di un caso reale con documento bona fide del soggetto ID2}
+\label{tab:img_bona_fide_id2}
 \end{minipage}
 
 \end{table}
@@ -1065,8 +1091,8 @@ DEMORPH2  & ID2 & 0.10475689172 \\
 
 In questo caso l'immagine del documento non è generato tramite morphing, ma rappresenta un caso bona fide. In tale scenario, si assume che:
 \begin{itemize}
-    \item DOC rappresenta il documento appartenente realmente al soggetto ID1
-    \item LIVE è l'immagine dello stesso soggetto ID1 con espressione differente rispetto al documento
+    \item DOC rappresenta il documento appartenente realmente al soggetto ID1~\ref{tab:img_bona_fide_id1} / ID2~\ref{tab:img_bona_fide_id2}
+    \item LIVE è l'immagine dello stesso soggetto presente nel documento con espressione differente rispetto al documento
 \end{itemize}
 
 In questo contesto non è presente alcuna identità latente da separare. I risultati riportati nelle Tabelle~\ref{tab:caso_bona_fide_id1} e~\ref{tab:caso_bona_fide_id2} mostrano che l’embedding ottenuto dal demorphing risulta significativamente più vicino all’identità presente nel documento.
@@ -1078,12 +1104,16 @@ In questo contesto non è presente alcuna identità latente da separare. I risul
 
 \section{Sintesi dei risultati}
 Il lavoro svolto è incentrato sull'analisi delle tecniche di face morphing, che rappresentano una vulnerabilità significativa nei moderni sistemi biometrici di controllo dell'identità, in particolare nei contesti di Automated Border Control.
+
 La presenza di immagini morphed elude infatti i sistemi di controllo perché compromette il principio di univocità tra identità e documento.
+
 Il lavoro svolto è incentrato sull'analisi della generazione di immagini morphed nello spazio degli embedding biometrici. Il morphing viene realizzato attraverso un’interpolazione tra i vettori identitari associati ai soggetti di partenza, producendo un embedding intermedio che rappresenta un'identità compatibile con entrambe le entità originali, ma che non può essere ricondotta in modo univoco a nessuna delle due.
 
 Partendo da questa configurazione, ci si è interrogati sulla possibilità di ricostruire, almeno in maniera approssimata, una delle identità sorgenti a partire dall’immagine morphed del documento e dall’embedding della fotografia live acquisita al controllo. L’obiettivo è quindi verificare se, attraverso un’operazione di demorphing nello spazio delle feature, sia possibile stimare l’identità complementare e valutarne la compatibilità biometrica.
 
-Alla luce delle analisi teoriche, è stato possibile osservare che l’inversione approssimata del processo di interpolazione nello spazio degli embedding produce risultati coerenti con le attese. In particolare, l’operazione di demorphing consente di stimare un embedding riconducibile all’identità che ha contribuito alla generazione dell’immagine morphed. Le metriche di valutazione utilizzate mostrano che l’embedding stimato presenta valori di distanza ridotti rispetto alle immagini appartenenti al soggetto sorgente, indicando un’elevata similarità biometrica.
+Alla luce delle analisi teoriche, è stato possibile osservare che l’inversione approssimata del processo di interpolazione nello spazio degli embedding produce risultati coerenti con le attese. In particolare, l’operazione di demorphing consente di stimare un embedding riconducibile all’identità che ha contribuito alla generazione dell’immagine morphed.
+
+Le metriche di valutazione utilizzate mostrano che l’embedding stimato presenta valori di distanza molto bassi rispetto alle immagini appartenenti al soggetto sorgente, indicando un’elevata similarità biometrica.
 La validazione del processo è stata estesa ad ulteriori immagini del soggetto  messe a disposizione dal dataset FEI, caratterizzate da variazioni di posa, espressione facciale e condizioni di illuminazione. Anche in presenza di tali variazioni, le metriche di distanza restituiscono valori generalmente contenuti, confermando la coerenza della ricostruzione e la stabilità dell’identità stimata nello spazio latente.
 
 Tali risultati suggeriscono che, in uno scenario controllato in cui siano noti il metodo di interpolazione e il parametro utilizzato per la generazione del morph, l’inversione del processo risulta effettivamente in grado di recuperare informazioni significative sull’identità complementare.
@@ -1091,10 +1121,15 @@ Tali risultati suggeriscono che, in uno scenario controllato in cui siano noti i
 \section{Limiti e sviluppi futuri}
 Tuttavia, è importante sottolineare che la coerenza dei risultati è strettamente legata alle condizioni controllate della sperimentazione.
 
-Il problema inverso è stato ricostruito assumendo nota a priori l’intera pipeline di generazione dell’immagine morphed, inclusi i modelli utilizzati per l’estrazione degli embedding, l’algoritmo di interpolazione impiegato e l’ordine delle operazioni nella fase generativa. In particolare, si è ipotizzato che il morphing fosse realizzato tramite interpolazione sferica (SLERP) nello stesso spazio latente in cui viene successivamente effettuata l’inversione.
-Questa coerenza architetturale riduce le fonti di variabilità e garantisce una forte dipendenza tra fase di generazione e fase di inversione. In uno scenario reale, tuttavia, il metodo e la pipeline generativa con cui un’immagine morphed è stata prodotta potrebbero essere differenti. In questa prospettiva, un naturale sviluppo futuro consiste nell’estendere l’analisi a tecniche di morphing eterogenee, valutando la robustezza dell’approccio rispetto a differenti tecniche, valutando la capacità del metodo di adattarsi a pipeline generative non note a priori.
+Il problema inverso è stato ricostruito assumendo nota a priori l’intera pipeline di generazione dell’immagine morphed, inclusi i modelli utilizzati per l’estrazione degli embedding, l’algoritmo di interpolazione impiegato e l’ordine delle operazioni nella fase generativa. In particolare, si è ipotizzato che il morphing fosse realizzato tramite interpolazione sferica (SLERP) nello stesso spazio latente in cui viene successivamente effettuata l’inversione. Questa coerenza architetturale riduce le fonti di variabilità e garantisce una forte dipendenza tra fase di generazione e fase di inversione.
 
-Anche assumendo che l’immagine del documento sia stata generata tramite interpolazione sferica, emerge un ulteriore vincolo teorico. La funzione SLERP non è invertibile nel senso matematico classico. Inoltre, la ricostruzione dipende strettamente dal parametro di interpolazione $t$, che controlla la posizione del punto lungo l’arco sull’ipersfera. Nel corso dell’esperimento, tale parametro è stato assunto pari a $0.5$, corrispondente a un contributo bilanciato tra le due identità e rappresentativo di uno scenario tipico di morphing. In un contesto reale, tuttavia, il valore di $t$ non è noto né direttamente stimabile a partire dagli embedding disponibili, rendendo l’assunzione adottata una semplificazione teorica.
+In uno scenario reale, tuttavia, il metodo e la pipeline generativa con cui un’immagine morphed è stata prodotta potrebbero essere differenti.
+
+In questa prospettiva, un naturale sviluppo futuro consiste nell’estendere l’analisi a tecniche di morphing eterogenee, valutando la robustezza dell’approccio rispetto a differenti tecniche e la capacità del metodo di adattarsi a pipeline generative non note a priori.
+
+Anche assumendo che l’immagine del documento sia stata generata tramite interpolazione sferica, emerge un ulteriore vincolo teorico. La funzione SLERP non è invertibile nel senso matematico classico e la sua ricostruzione dipende strettamente dal parametro di interpolazione $t$, che controlla la posizione del punto lungo l’arco sull’ipersfera.
+
+Nel corso dell’esperimento, tale parametro è stato assunto pari a $0.5$, corrispondente a un contributo bilanciato tra le due identità e rappresentativo di uno scenario tipico di morphing. In un contesto reale, tuttavia, il valore di $t$ non è noto né direttamente stimabile a partire dagli embedding disponibili, rendendo l’assunzione adottata una semplificazione teorica.
 Questo aspetto apre a ulteriori sviluppi, come l’analisi della sensibilità del processo di demorphing rispetto a diversi valori del parametro $t$.
 
 %\note{At the end, describe the structure of the paper}
@@ -1133,8 +1168,8 @@ You may also put some code snippet (which is NOT float by default), eg: \cref{ls
 \bibliographystyle{alpha}
 \bibliography{bibliography}
 
-\begin{acknowledgements} % this is optional
-Optional. Max 1 page.
-\end{acknowledgements}
+% \begin{acknowledgements} % this is optional
+% Optional. Max 1 page.
+% \end{acknowledgements}
 
 \end{document}
